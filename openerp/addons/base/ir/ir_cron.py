@@ -131,13 +131,18 @@ class ir_cron(osv.osv):
                 model = registry[model_name]
                 if hasattr(model, method_name):
                     log_depth = (None if _logger.isEnabledFor(logging.DEBUG) else 1)
+                     _logger.debug('**************************************************************************')
+                    _logger.debug('CRON STARTING  %s,%s' % (model_name,method_name))
+                    _logger.debug('**************************************************************************')
                     netsvc.log(_logger, logging.DEBUG, 'cron.object.execute', (cr.dbname,uid,'*',model_name,method_name)+tuple(args), depth=log_depth)
                     if _logger.isEnabledFor(logging.DEBUG):
                         start_time = time.time()
                     getattr(model, method_name)(cr, uid, *args)
                     if _logger.isEnabledFor(logging.DEBUG):
                         end_time = time.time()
+                        _logger.debug('**********************************************************************')
                         _logger.debug('%.3fs (%s, %s)' % (end_time - start_time, model_name, method_name))
+                        _logger.debug('*************************************************************************')
                     openerp.modules.registry.RegistryManager.signal_caches_change(cr.dbname)
                 else:
                     msg = "Method `%s.%s` does not exist." % (model_name, method_name)
