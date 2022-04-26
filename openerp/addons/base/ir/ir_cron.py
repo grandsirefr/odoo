@@ -131,7 +131,7 @@ class ir_cron(osv.osv):
                 model = registry[model_name]
                 if hasattr(model, method_name):
                     log_depth = (None if _logger.isEnabledFor(logging.DEBUG) else 1)
-                     _logger.debug('**************************************************************************')
+                    _logger.debug('**************************************************************************')
                     _logger.debug('CRON STARTING  %s,%s' % (model_name,method_name))
                     _logger.debug('**************************************************************************')
                     netsvc.log(_logger, logging.DEBUG, 'cron.object.execute', (cr.dbname,uid,'*',model_name,method_name)+tuple(args), depth=log_depth)
