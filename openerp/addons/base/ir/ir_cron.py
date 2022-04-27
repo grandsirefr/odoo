@@ -34,8 +34,6 @@ from openerp.tools.safe_eval import safe_eval as eval
 from openerp.tools.translate import _
 from openerp.modules import load_information_from_description_file
 
-from odoo.openerp.tools.log_helpers import wrap_with_characters, log_time
-
 _logger = logging.getLogger(__name__)
 
 BASE_VERSION = load_information_from_description_file('base')['version']
@@ -134,21 +132,18 @@ class ir_cron(osv.osv):
                 if hasattr(model, method_name):
                     log_depth = (None if _logger.isEnabledFor(logging.DEBUG) else 1)
 
-                    wrap_with_characters(
-                        lambda x : netsvc.log(_logger, logging.DEBUG, 'cron.object.execute', (cr.dbname,uid,'*',model_name,method_name)+tuple(args), depth=log_depth),
-                        'CRON STARTING  %s,%s' % (model_name, method_name)
-                    )
-
+                    netsvc.log(_logger, logging.DEBUG,
+                               '    ***** cron.object.execute starting at %' % datetime.now(),
+                               (cr.dbname, uid, '*', model_name,method_name)+tuple(args), depth=log_depth)
                     if _logger.isEnabledFor(logging.DEBUG):
+                        start_time = time.time()
                     getattr(model, method_name)(cr, uid, *args)
                     if _logger.isEnabledFor(logging.DEBUG):
-                        log_time(
-                            lambda x: netsvc.log(_logger, logging.DEBUG, 'cron.object.execute',
-                                                 (cr.dbname, uid, '*', model_name, method_name) + tuple(args),
-                                                 depth=log_depth),
-                            "{}::{}".format(model_name,method_name)
-                        )
-
+                        end_time = time.time()
+                        netsvc.log(_logger, logging.DEBUG,
+                                   '    ===== cron.object.finished at % : It tooks %.3fs ' % (datetime.now(), end_time - start_time),
+                                   (model_name,method_name)+tuple(args),
+                                   depth=log_depth)
                     openerp.modules.registry.RegistryManager.signal_caches_change(cr.dbname)
                 else:
                     msg = "Method `%s.%s` does not exist." % (model_name, method_name)
