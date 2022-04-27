@@ -34,12 +34,24 @@ from openerp.tools.safe_eval import safe_eval as eval
 from openerp.tools.translate import _
 from openerp.modules import load_information_from_description_file
 
+import os
+import psutil
+
 _logger = logging.getLogger(__name__)
 
 BASE_VERSION = load_information_from_description_file('base')['version']
 
+
+def memory_info(process):
+    """ psutil < 2.0 does not have memory_info, >= 3.0 does not have
+    get_memory_info """
+    pmem = (getattr(process, 'memory_info', None) or process.get_memory_info)()
+    return (pmem.rss, pmem.vms)
+
+
 def str2tuple(s):
     return eval('tuple(%s)' % (s or ''))
+
 
 _intervalTypes = {
     'work_days': lambda interval: relativedelta(days=interval),
@@ -131,17 +143,22 @@ class ir_cron(osv.osv):
                 model = registry[model_name]
                 if hasattr(model, method_name):
                     log_depth = (None if _logger.isEnabledFor(logging.DEBUG) else 1)
-
                     netsvc.log(_logger, logging.DEBUG,
                                '    ***** cron.object.execute starting at %' % datetime.now(),
                                (cr.dbname, uid, '*', model_name,method_name)+tuple(args), depth=log_depth)
                     if _logger.isEnabledFor(logging.DEBUG):
                         start_time = time.time()
+                        start_rss, start_vms = memory_info(psutil.Process(os.getpid()))
                     getattr(model, method_name)(cr, uid, *args)
                     if _logger.isEnabledFor(logging.DEBUG):
-                        end_time = time.time()
+                        run_time = time.time() - start_time
+                        end_rss, end_vms = memory_info(psutil.Process(os.getpid()))
+                        vms_diff = (end_vms - start_vms) / 1024
+                        logline = ' finished at: % -- It tooks time:%.3fs mem: %sk -> %sk (diff: %sk)' % \
+                                  (datetime.now(), run_time, start_vms / 1024, end_vms / 1024, vms_diff)
+
                         netsvc.log(_logger, logging.DEBUG,
-                                   '    ===== cron.object.finished at % : It tooks %.3fs ' % (datetime.now(), end_time - start_time),
+                                   '    ===== cron.object.finished at % : % ' % logline,
                                    (model_name,method_name)+tuple(args),
                                    depth=log_depth)
                     openerp.modules.registry.RegistryManager.signal_caches_change(cr.dbname)
