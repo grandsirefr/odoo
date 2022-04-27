@@ -144,7 +144,7 @@ class ir_cron(osv.osv):
                 if hasattr(model, method_name):
                     log_depth = (None if _logger.isEnabledFor(logging.DEBUG) else 1)
                     netsvc.log(_logger, logging.DEBUG,
-                               '    ***** cron.object.execute starting at %' % datetime.now(),
+                               '    ***** cron.object.execute starting at %' % (datetime.now()),
                                (cr.dbname, uid, '*', model_name,method_name)+tuple(args), depth=log_depth)
                     if _logger.isEnabledFor(logging.DEBUG):
                         start_time = time.time()
@@ -158,7 +158,7 @@ class ir_cron(osv.osv):
                                   (datetime.now(), run_time, start_vms / 1024, end_vms / 1024, vms_diff)
 
                         netsvc.log(_logger, logging.DEBUG,
-                                   '    ===== cron.object.finished at % : % ' % logline,
+                                   '    ===== cron.object.finished at % : % ' % (logline),
                                    (model_name,method_name)+tuple(args),
                                    depth=log_depth)
                     openerp.modules.registry.RegistryManager.signal_caches_change(cr.dbname)
